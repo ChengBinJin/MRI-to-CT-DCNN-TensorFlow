@@ -3,30 +3,41 @@ import sys
 import cv2
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from utils import all_files_under
 
 parser = argparse.ArgumentParser(description='parser')
-parser.add_argument('--data', dest='data', default='../../Data/brain01', help='dataset for making mask')
+parser.add_argument('--data', dest='data', default='../../Data/brain01/raw', help='dataset for making mask')
 parser.add_argument('--size', dest='size', default=256, type=int, help='image width == height')
 parser.add_argument('--delay', dest='delay', default=0, type=int, help='wait delay when showing image')
-parser.add_argument('--task', dest='task', default='m2c', help='task is m2c or c2m, default: m2c')
+parser.add_argument('--task', dest='task', default='m2c', help='is m2c or c2m, default: m2c')
+parser.add_argument('--is_save', dest='is_save', default=False, action='store_true', help='save MR, CT, and Mask')
 args = parser.parse_args()
 
-def main():
+def main(data, size=256, task='m2c', is_save=False, delay=0):
     # read file paths
-    filenames = all_files_under(path=args.data)
+    filenames = all_files_under(path=data)
+
+    # Note
+    if task.lower() == 'c2m':
+        print('*' * 60)
+        print('[!] Estimating C2M mask should be more improved. We recommend the task of C2M to use this function.')
+        print('*' * 60)
+
+    if is_save:
+        print(os.path.dirname(data))
+
 
     for idx, filename in enumerate(filenames):
         img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
-        ct, mr = img[:, :args.size], img[:, -args.size:]
+        ct, mr = img[:, :size], img[:, -size:]
 
         # Calculate mask
-        if args.task == 'c2m':
-            mask = find_mask(ct)
-        elif args.task == 'm2c':
-            mask = find_mask(mr)
+        if task.lower() == 'm2c':
+            mask = get_mask(mr, task=task)
+        elif task.lower() == 'c2m':
+            mask = get_mask(ct, task=task)
         else:
             raise NotImplementedError
 
@@ -35,10 +46,10 @@ def main():
         masked_mr = mr & mask
 
         imgs = [ct, mask, masked_ct, mr, mask, masked_mr]
-        plot_images(images=imgs)
+        plot_images(images=imgs, task=task.lower(), size=size, delay=delay)
 
 
-def find_mask(image):
+def get_mask(image, task='m2c'):
     # Bilateral Filtering
     img_blur = cv2.bilateralFilter(image, 9, 75, 75)
     th, img_thr = cv2.threshold(img_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -79,27 +90,41 @@ def find_mask(image):
 
     cv2.drawContours(mask, [max_cnt], 0, 255, -1)
 
-    if args.task == 'm2c':
+    if task.lower() == 'm2c':
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
         mask = cv2.dilate(mask, kernel, iterations=2)
 
     return mask
 
-def plot_images(images):
-    canvas = np.zeros((2 * args.size, 3 * args.size), np.uint8)
+def plot_images(images, task='m2c', size=256, delay=0):
+    canvas = np.zeros((2 * size, 3 * size), np.uint8)
 
-    canvas[:args.size, :args.size] = images[0]
-    canvas[:args.size, args.size:2*args.size] = images[1]
-    canvas[:args.size, 2*args.size:] = images[2]
-    canvas[args.size:, :args.size] = images[3]
-    canvas[args.size:, args.size:2*args.size] = images[4]
-    canvas[args.size:, 2*args.size:] = images[5]
+    if task == 'm2c':
+        canvas[:size, :size] = images[3]
+        canvas[:size, size:2*size] = images[4]
+        canvas[:size, 2*size:] = images[5]
+        canvas[size:, :size] = images[0]
+        canvas[size:, size:2*size] = images[1]
+        canvas[size:, 2*size:] = images[2]
+    elif task == 'c2m':
+        canvas[:size, :size] = images[0]
+        canvas[:size, size:2*size] = images[1]
+        canvas[:size, 2*size:] = images[2]
+        canvas[size:, :size] = images[3]
+        canvas[size:, size:2*size] = images[4]
+        canvas[size:, 2*size:] = images[5]
+    else:
+        raise NotImplementedError
 
-    cv2.imshow('img | mask | masked', canvas)
 
-    if cv2.waitKey(args.delay) & 0xFF == 27:
+    cv2.imshow(task.upper(), canvas)
+
+    if cv2.waitKey(delay) & 0xFF == 27:
         sys.exit('[*] Esc clicked!')
+
+def save_imgs():
+    print('Hello save_imgs!')
 
 
 if __name__ == '__main__':
-    main()
+    main(data=args.data, size=args.size, task=args.task, delay=args.delay, is_save=args.is_save)
