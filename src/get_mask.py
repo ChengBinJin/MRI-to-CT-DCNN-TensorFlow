@@ -25,9 +25,10 @@ def main(data, size=256, task='m2c', is_save=False, delay=0):
         print('[!] Estimating C2M mask should be more improved. We recommend the task of C2M to use this function.')
         print('*' * 60)
 
-    if is_save:
-        print(os.path.dirname(data))
-
+    # Construct saving folder
+    save_path = os.path.join(os.path.dirname(data), task)
+    if is_save and not os.path.exists(save_path):
+        os.makedirs(save_path)
 
     for idx, filename in enumerate(filenames):
         img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
@@ -46,7 +47,17 @@ def main(data, size=256, task='m2c', is_save=False, delay=0):
         masked_mr = mr & mask
 
         imgs = [ct, mask, masked_ct, mr, mask, masked_mr]
-        plot_images(images=imgs, task=task.lower(), size=size, delay=delay)
+        plot_imgs(images=imgs,
+                  task=task.lower(),
+                  size=size,
+                  delay=delay)
+
+        # Write images
+        save_imgs(images=[masked_ct, masked_mr, mask],
+                  path=save_path,
+                  filename=filename,
+                  task=task.lower(),
+                  size=size)
 
 
 def get_mask(image, task='m2c'):
@@ -96,7 +107,7 @@ def get_mask(image, task='m2c'):
 
     return mask
 
-def plot_images(images, task='m2c', size=256, delay=0):
+def plot_imgs(images, task='m2c', size=256, delay=0):
     canvas = np.zeros((2 * size, 3 * size), np.uint8)
 
     if task == 'm2c':
@@ -122,9 +133,25 @@ def plot_images(images, task='m2c', size=256, delay=0):
     if cv2.waitKey(delay) & 0xFF == 27:
         sys.exit('[*] Esc clicked!')
 
-def save_imgs():
-    print('Hello save_imgs!')
+def save_imgs(images, path, filename=None, task='m2c', size=256):
+    canvas = np.zeros((size, 3*size), dtype=np.uint8)
+
+    if task == 'm2c':
+        canvas[:, :size] = images[1]
+        canvas[:, size:2*size] = images[0]
+    elif task == 'c2m':
+        canvas[:, :size] = images[0]
+        canvas[:, size:2*size] = images[1]
+    else:
+        raise NotImplementedError
+
+    canvas[:, -size:] = images[2]
+
+    cv2.imwrite(os.path.join(path, os.path.basename(filename) + '.png'), canvas)
 
 
 if __name__ == '__main__':
+    if args.task != 'c2m' and args.task != 'm2c':
+        sys.exit("[*] Input task is not proper!")
+
     main(data=args.data, size=args.size, task=args.task, delay=args.delay, is_save=args.is_save)
