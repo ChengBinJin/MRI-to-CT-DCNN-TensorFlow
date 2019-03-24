@@ -8,11 +8,13 @@ import numpy as np
 from utils import all_files_under
 
 parser = argparse.ArgumentParser(description='parser')
-parser.add_argument('--data', dest='data', default='../../Data/brain01/raw', help='dataset for making mask')
+parser.add_argument('--data', dest='data', default='../../Data/brain01/raw',
+                    help='dataset for making mask')
 parser.add_argument('--size', dest='size', default=256, type=int, help='image width == height')
 parser.add_argument('--delay', dest='delay', default=0, type=int, help='wait delay when showing image')
 parser.add_argument('--task', dest='task', default='m2c', help='is m2c or c2m, default: m2c')
-parser.add_argument('--is_save', dest='is_save', default=False, action='store_true', help='save MR, CT, and Mask')
+parser.add_argument('--is_save', dest='is_save', default=False, action='store_true',
+                    help='save MR, CT, and Mask')
 args = parser.parse_args()
 
 def main(data, size=256, task='m2c', is_save=False, delay=0):
@@ -22,13 +24,26 @@ def main(data, size=256, task='m2c', is_save=False, delay=0):
     # Note
     if task.lower() == 'c2m':
         print('*' * 60)
-        print('[!] Estimating C2M mask should be more improved. We recommend the task of C2M to use this function.')
+        print('[!] Estimating C2M mask should be more improved. '
+              'We recommend the task of C2M to use this function.')
         print('*' * 60)
 
     # Construct saving folder
     save_path = os.path.join(os.path.dirname(data), task)
     if is_save and not os.path.exists(save_path):
         os.makedirs(save_path)
+
+    save_ct_path = os.path.join(os.path.dirname(data), 'ct')
+    if is_save and not os.path.exists(save_ct_path):
+        os.makedirs(save_ct_path)
+
+    save_mr_path = os.path.join(os.path.dirname(data), 'mr')
+    if is_save and not os.path.exists(save_mr_path):
+        os.makedirs(save_mr_path)
+
+    save_mask_path = os.path.join(os.path.dirname(data), 'mask')
+    if is_save and not os.path.exists(save_mask_path):
+        os.makedirs(save_mask_path)
 
     for idx, filename in enumerate(filenames):
         img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
@@ -54,7 +69,7 @@ def main(data, size=256, task='m2c', is_save=False, delay=0):
 
         # Write images
         save_imgs(images=[masked_ct, masked_mr, mask],
-                  path=save_path,
+                  paths=[save_path, save_ct_path, save_mr_path, save_mask_path],
                   filename=filename,
                   task=task.lower(),
                   size=size)
@@ -133,7 +148,7 @@ def plot_imgs(images, task='m2c', size=256, delay=0):
     if cv2.waitKey(delay) & 0xFF == 27:
         sys.exit('[*] Esc clicked!')
 
-def save_imgs(images, path, filename=None, task='m2c', size=256):
+def save_imgs(images, paths, filename=None, task='m2c', size=256):
     canvas = np.zeros((size, 3*size), dtype=np.uint8)
 
     if task == 'm2c':
@@ -146,8 +161,14 @@ def save_imgs(images, path, filename=None, task='m2c', size=256):
         raise NotImplementedError
 
     canvas[:, -size:] = images[2]
+    ct_img = images[0]
+    mr_img = images[1]
+    mask_img = images[2]
 
-    cv2.imwrite(os.path.join(path, os.path.basename(filename) + '.png'), canvas)
+    cv2.imwrite(os.path.join(paths[0], os.path.basename(filename) + '.png'), canvas)
+    cv2.imwrite(os.path.join(paths[1], os.path.basename(filename) + '.png'), ct_img)
+    cv2.imwrite(os.path.join(paths[2], os.path.basename(filename) + '.png'), mr_img)
+    cv2.imwrite(os.path.join(paths[3], os.path.basename(filename) + '.png'), mask_img)
 
 
 if __name__ == '__main__':
