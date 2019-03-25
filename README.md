@@ -1,8 +1,8 @@
 # MRI-to-CT-DCNN-TensorFlow
 
 # Preprocessing
-- Binary head mask using [Otsu auto-thresholding method](https://pdfs.semanticscholar.org/fa29/610048ae3f0ec13810979d0f27ad6971bdbf.pdf)
-- N4 bias field correction using [N4ITK method](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=5445030)
+- Binary head mask using [Otsu auto-thresholding](https://pdfs.semanticscholar.org/fa29/610048ae3f0ec13810979d0f27ad6971bdbf.pdf)
+- N4 bias field correction using [N4ITK](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=5445030)
 
 # References
 - Otsu, Nobuyuki. "A threshold selection method from gray-level histograms." IEEE transactions on systems, man, and cybernetics 9.1 (1979): 62-66.
