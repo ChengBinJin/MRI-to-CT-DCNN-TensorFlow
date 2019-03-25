@@ -165,10 +165,10 @@ def save_imgs(images, paths, filename=None, task='m2c', size=256):
     mr_img = images[1]
     mask_img = images[2]
 
-    cv2.imwrite(os.path.join(paths[0], os.path.basename(filename) + '.png'), canvas)
-    cv2.imwrite(os.path.join(paths[1], os.path.basename(filename) + '.png'), ct_img)
-    cv2.imwrite(os.path.join(paths[2], os.path.basename(filename) + '.png'), mr_img)
-    cv2.imwrite(os.path.join(paths[3], os.path.basename(filename) + '.png'), mask_img)
+    cv2.imwrite(os.path.join(paths[0], os.path.basename(filename)), canvas)
+    cv2.imwrite(os.path.join(paths[1], os.path.basename(filename)), ct_img)
+    cv2.imwrite(os.path.join(paths[2], os.path.basename(filename)), mr_img)
+    cv2.imwrite(os.path.join(paths[3], os.path.basename(filename)), mask_img)
 
 
 if __name__ == '__main__':
