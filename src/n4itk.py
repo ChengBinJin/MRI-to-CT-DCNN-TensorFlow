@@ -31,16 +31,16 @@ def main(mr_folder, mask_folder, size=256, is_save=False, delay=0):
             os.makedirs(save_folder)
 
     for idx, (mr_path, mask_path) in enumerate(zip(mr_paths, mask_paths)):
-        ori_img, cor_img = n4itk(mr_path, mask_path)
+        print('idx: {}, MR path: {}'.format(idx, mr_path))
+
+        ori_img, cor_img = n4itk(idx, mr_path, mask_path)
         show_imgs(ori_img, cor_img, size, delay)
 
         if is_save:
             save_imgs(save_folder, mr_path, cor_img)
 
-        if idx % 100 == 0:
-            print('idx: {} is finished!'.format(idx))
 
-def n4itk(mr_path, mask_path):
+def n4itk(idx, mr_path, mask_path):
     # Initialize reader IO
     reader = sitk.ImageFileReader()
     reader.SetImageIO("PNGImageIO")
@@ -57,17 +57,23 @@ def n4itk(mr_path, mask_path):
     mask_img[mask_img > 1] = 1
     mask_img = sitk.GetImageFromArray(mask_img)
 
+    # mask_img = sitk.OtsuThreshold(mr_img, 0, 1, 200)
+
     # Convert to sitkFloat32
     mr_img = sitk.Cast(mr_img, sitk.sitkFloat32)
     # N4 bias field correction
     num_fitting_levels = 4
     num_iters = 200
-    corrector = sitk.N4BiasFieldCorrectionImageFilter()
-    corrector.SetMaximumNumberOfIterations([num_iters] * num_fitting_levels)
-    cor_img = corrector.Execute(mr_img, mask_img)
-    cor_img = sitk.GetArrayFromImage(cor_img)
+    try:
+        corrector = sitk.N4BiasFieldCorrectionImageFilter()
+        corrector.SetMaximumNumberOfIterations([num_iters] * num_fitting_levels)
+        cor_img = corrector.Execute(mr_img, mask_img)
+        cor_img = sitk.GetArrayFromImage(cor_img)
+        return ori_img, cor_img  # return origin image and corrected image
+    except (RuntimeError, TypeError, NameError):
+        print('[*] Catch the RuntimeError!')
+        return ori_img, ori_img
 
-    return ori_img, cor_img  # return origin image and corrected image
 
 def show_imgs(img1, img2, size=256, delay=0):
     canvas = np.zeros((size, 2 * size), dtype=np.uint8)
