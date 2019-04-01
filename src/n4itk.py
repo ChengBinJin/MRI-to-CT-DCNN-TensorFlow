@@ -20,15 +20,11 @@ args = parser.parse_args()
 
 
 def main(data, size=256, is_save=False, delay=0):
-    # mr_paths = all_files_under(mr_folder, extension='png')
-    # mask_paths = all_files_under(mask_folder, extension='png')
-
-    filenames = all_files_under(data, extension='png')
-
     save_folder = os.path.join(os.path.dirname(data), 'N4_bias_correction')
     if is_save and not os.path.exists(save_folder):
         os.makedirs(save_folder)
 
+    filenames = all_files_under(data, extension='png')
     for idx, filename in enumerate(filenames):
         print('idx: {}, filename: {}'.format(idx, filename))
         img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
@@ -42,25 +38,8 @@ def main(data, size=256, is_save=False, delay=0):
 
 
 def n4itk(img):
-    # # Initialize reader IO
-    # reader = sitk.ImageFileReader()
-    # reader.SetImageIO("PNGImageIO")
-    # # Read MR image
-    # reader.SetFileName(mr_path)
-    # mr_img = reader.Execute()
-    # ori_img = sitk.GetArrayFromImage(mr_img)
-    # # Read Mask image
-    # reader.SetFileName(mask_path)
-    # mask_img = reader.Execute()
-
     ori_img = img.copy()
     mr_img = sitk.GetImageFromArray(img)
-
-    # Convert (0, 255) to (0, 1)
-    # mask_img = sitk.GetArrayFromImage(mask_img)
-    # mask_img[mask_img > 1] = 1
-    # mask_img = sitk.GetImageFromArray(mask_img)
-
     mask_img = sitk.OtsuThreshold(mr_img, 0, 1, 200)
 
     # Convert to sitkFloat32
@@ -73,6 +52,9 @@ def n4itk(img):
         corrector.SetMaximumNumberOfIterations([num_iters] * num_fitting_levels)
         cor_img = corrector.Execute(mr_img, mask_img)
         cor_img = sitk.GetArrayFromImage(cor_img)
+
+        cor_img[cor_img<0], cor_img[cor_img>255] = 0, 255
+        cor_img = cor_img.astype(np.uint8)
         return ori_img, cor_img  # return origin image and corrected image
     except (RuntimeError, TypeError, NameError):
         print('[*] Catch the RuntimeError!')
@@ -95,13 +77,8 @@ def imwrite(img, save_folder, filename):
     img[img < 0] = 0
     img[img > 255] = 255
     img_int = img.astype(np.uint8)
-
-    # save_path = os.path.join(save_folder, os.path.basename(filename))
     cv2.imwrite(os.path.join(save_folder, os.path.basename(filename)), img_int)
 
 
 if __name__ == '__main__':
-    # if not os.path.exists(args.mr_path) or not os.path.exists(args.mask_path):
-    #     sys.exit("MR folder or Mask folder not exist!")
-
     main(data=args.data, size=args.size, is_save=args.is_save, delay=args.delay)

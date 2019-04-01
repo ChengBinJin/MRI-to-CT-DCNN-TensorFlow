@@ -29,11 +29,8 @@ def main(data, size, temp_id, is_save=False, delay=0):
 
     for idx, filename in enumerate(filenames):
         img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
-
-        if idx == 0:
-            ref_img = img[:, -size:].copy()
-
         mr_img = img[:, -size:]
+
         mr_img_af = histogram_matching(mr_img, ref_img)
         canvas = imshow(mr_img, mr_img_af, size=size, delay=delay)
 
