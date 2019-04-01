@@ -29,21 +29,9 @@ def main(data, size=256, task='m2c', is_save=False, delay=0):
         print('*' * 60)
 
     # Construct saving folder
-    save_path = os.path.join(os.path.dirname(data), task)
+    save_path = os.path.join(os.path.dirname(data), 'get_mask_' + task)
     if is_save and not os.path.exists(save_path):
         os.makedirs(save_path)
-
-    save_ct_path = os.path.join(os.path.dirname(data), 'ct')
-    if is_save and not os.path.exists(save_ct_path):
-        os.makedirs(save_ct_path)
-
-    save_mr_path = os.path.join(os.path.dirname(data), 'mr')
-    if is_save and not os.path.exists(save_mr_path):
-        os.makedirs(save_mr_path)
-
-    save_mask_path = os.path.join(os.path.dirname(data), 'mask')
-    if is_save and not os.path.exists(save_mask_path):
-        os.makedirs(save_mask_path)
 
     for idx, filename in enumerate(filenames):
         img = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
@@ -60,19 +48,11 @@ def main(data, size=256, task='m2c', is_save=False, delay=0):
         # Masked out
         masked_ct = ct & mask
         masked_mr = mr & mask
-
         imgs = [ct, mask, masked_ct, mr, mask, masked_mr]
-        plot_imgs(images=imgs,
-                  task=task.lower(),
-                  size=size,
-                  delay=delay)
+        canvas = imshow(images=imgs, task=task.lower(), size=size, delay=delay)
 
-        # Write images
-        save_imgs(images=[masked_ct, masked_mr, mask],
-                  paths=[save_path, save_ct_path, save_mr_path, save_mask_path],
-                  filename=filename,
-                  task=task.lower(),
-                  size=size)
+        if is_save:
+            imwrite(image=canvas, save_path=save_path, filename=filename)
 
 
 def get_mask(image, task='m2c'):
@@ -122,7 +102,7 @@ def get_mask(image, task='m2c'):
 
     return mask
 
-def plot_imgs(images, task='m2c', size=256, delay=0):
+def imshow(images, task='m2c', size=256, delay=0):
     canvas = np.zeros((2 * size, 3 * size), np.uint8)
 
     if task == 'm2c':
@@ -148,27 +128,10 @@ def plot_imgs(images, task='m2c', size=256, delay=0):
     if cv2.waitKey(delay) & 0xFF == 27:
         sys.exit('[*] Esc clicked!')
 
-def save_imgs(images, paths, filename=None, task='m2c', size=256):
-    canvas = np.zeros((size, 3*size), dtype=np.uint8)
+    return canvas
 
-    if task == 'm2c':
-        canvas[:, :size] = images[1]
-        canvas[:, size:2*size] = images[0]
-    elif task == 'c2m':
-        canvas[:, :size] = images[0]
-        canvas[:, size:2*size] = images[1]
-    else:
-        raise NotImplementedError
-
-    canvas[:, -size:] = images[2]
-    ct_img = images[0]
-    mr_img = images[1]
-    mask_img = images[2]
-
-    cv2.imwrite(os.path.join(paths[0], os.path.basename(filename)), canvas)
-    cv2.imwrite(os.path.join(paths[1], os.path.basename(filename)), ct_img)
-    cv2.imwrite(os.path.join(paths[2], os.path.basename(filename)), mr_img)
-    cv2.imwrite(os.path.join(paths[3], os.path.basename(filename)), mask_img)
+def imwrite(image, save_path, filename=None):
+    cv2.imwrite(os.path.join(save_path, os.path.basename(filename)), image)
 
 
 if __name__ == '__main__':
