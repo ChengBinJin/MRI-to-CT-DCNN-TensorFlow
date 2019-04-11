@@ -12,7 +12,6 @@ paser.add_argument('--temp_id', dest='temp_id', default=2, type=int, help='templ
 paser.add_argument('--size', dest='size', default=256, type=int, help='image wdith == height')
 paser.add_argument('--delay', dest='delay', default=0, type=int, help='interval time when showing image')
 paser.add_argument('--is_save', dest='is_save', default=False, action='store_true', help='save image')
-paser.add_argument('--new', dest='new', default=1., type=float, help='new')
 args = paser.parse_args()
 
 def main(data, temp_id, size=256, delay=0, is_save=False):
