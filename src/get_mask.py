@@ -7,7 +7,7 @@ import numpy as np
 
 from utils import all_files_under
 
-parser = argparse.ArgumentParser(description='parser')
+parser = argparse.ArgumentParser(description='get_mask')
 parser.add_argument('--data', dest='data', default='../../Data/brain01/raw',
                     help='dataset for making mask')
 parser.add_argument('--size', dest='size', default=256, type=int, help='image width == height')
@@ -57,13 +57,14 @@ def main(data, size=256, task='m2c', is_save=False, delay=0):
 
 def get_mask(image, task='m2c'):
     # Bilateral Filtering
-    img_blur = cv2.bilateralFilter(image, 9, 75, 75)
+    # img_blur = cv2.bilateralFilter(image, 5, 75, 75)
+    img_blur = image.copy()
     th, img_thr = cv2.threshold(img_blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     img_mor = img_thr.copy()
 
     # For loop closing
-    for ksize in range(15, 3, -2):
+    for ksize in range(21, 3, -2):
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ksize, ksize))
         img_mor = cv2.morphologyEx(img_mor, cv2.MORPH_CLOSE, kernel)
 

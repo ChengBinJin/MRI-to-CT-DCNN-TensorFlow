@@ -4,23 +4,25 @@ import argparse
 import cv2
 import numpy as np
 
-from n4itk import n4itk
-from histogram_matching import histogram_matching
-from get_mask import get_mask
-from utils import all_files_under
+from utils import all_files_under, n4itk, histogram_matching, get_mask
 
-paser = argparse.ArgumentParser(description='')
+paser = argparse.ArgumentParser(description='preprocessing')
 paser.add_argument('--data', dest='data', default='../../Data/brain01/raw', help='data path for preprocessing')
-paser.add_argument('--temp_id', dest='temp_id', default=0, type=int, help='template id of the histogram matching')
+paser.add_argument('--temp_id', dest='temp_id', default=2, type=int, help='template id of the histogram matching')
 paser.add_argument('--size', dest='size', default=256, type=int, help='image wdith == height')
 paser.add_argument('--delay', dest='delay', default=0, type=int, help='interval time when showing image')
 paser.add_argument('--is_save', dest='is_save', default=False, action='store_true', help='save image')
+paser.add_argument('--new', dest='new', default=1., type=float, help='new')
 args = paser.parse_args()
 
 def main(data, temp_id, size=256, delay=0, is_save=False):
     save_folder = os.path.join(os.path.dirname(data), 'preprocessing')
     if is_save and not os.path.exists(save_folder):
         os.makedirs(save_folder)
+
+    save_folder2 = os.path.join(os.path.dirname(data), 'post')
+    if is_save and not os.path.exists(save_folder2):
+        os.makedirs(save_folder2)
 
     # read all files paths
     filenames = all_files_under(data, extension='png')
@@ -48,9 +50,11 @@ def main(data, temp_id, size=256, delay=0, is_save=False):
         masked_ct = ct_img & mask
         masked_mr = his_mr & mask
         canvas = imshow(ori_img, cor_img, his_mr, masked_mr, mask, ct_img, masked_ct, size=size, delay=delay)
+        canvas2 = np.hstack((masked_mr, masked_ct, mask))
 
         if is_save:
             cv2.imwrite(os.path.join(save_folder, os.path.basename(filename)), canvas)
+            cv2.imwrite(os.path.join(save_folder2, os.path.basename(filename)), canvas2)
 
 def imshow(ori_mr, cor_mr, his_mr, masked_mr, mask, ori_ct, masked_ct, size=256, delay=0, himgs=2, wimgs=5, margin=5):
     canvas = 255 * np.ones((himgs * size + (himgs-1) * margin, wimgs * size + (wimgs-1) * margin), dtype=np.uint8)

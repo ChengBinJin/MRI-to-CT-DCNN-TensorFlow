@@ -6,7 +6,7 @@ import numpy as np
 
 from utils import all_files_under, histogram, cumulative_histogram
 
-parser = argparse.ArgumentParser(description='parser')
+parser = argparse.ArgumentParser(description='histogram_matching')
 parser.add_argument('--data', dest='data', default='../../Data/brain01/raw',
                     help='dataset for histogram matching')
 parser.add_argument('--temp_id', dest='temp_id', default=0, type=int, help='template image id of the histogram matching')

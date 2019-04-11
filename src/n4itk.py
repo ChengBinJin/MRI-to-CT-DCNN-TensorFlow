@@ -6,7 +6,7 @@ import numpy as np
 import SimpleITK as sitk
 from utils import all_files_under
 
-parser = argparse.ArgumentParser(description='parser')
+parser = argparse.ArgumentParser(description='n4itk')
 parser.add_argument('--data', dest='data', default='../../Data/brain01/raw', help='data path of the n4 bias correction')
 # parser.add_argument('--mask_path', dest='mask_path', default='../../Data/brain01/mask',
 #                     help='path of mask image folder')
