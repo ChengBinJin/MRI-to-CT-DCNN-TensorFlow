@@ -155,3 +155,11 @@ def get_mask(image, task='m2c'):
         mask = cv2.dilate(mask, kernel, iterations=2)
 
     return mask
+
+def load_data(img_names, is_test=False):
+    imgs = []
+    for _, img_name in enumerate(img_names):
+        img = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
+        imgs.append(img)
+
+    return imgs

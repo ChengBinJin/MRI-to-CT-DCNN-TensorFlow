@@ -5,9 +5,13 @@
 # Email: sbkim0407@gmail.com
 # ---------------------------------------------------------
 import os
+import sys
+import cv2
 import argparse
 
-from solver import Solver
+from dataset import Dataset
+# from model import Model
+# from solver import Solver
 
 parser = argparse.ArgumentParser(description='main')
 parser.add_argument('--gpu_index', dest='gpu_index', default='0',
@@ -35,11 +39,19 @@ args = parser.parse_args()
 def main():
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_index
 
-    solver = Solver(args)
-    if args.is_train:
-        solver.train()
-    else:
-        solver.test()
+    num_cross_vals = 6
+    for idx_cross_val in range(num_cross_vals):
+        data = Dataset(args.dataset, num_cross_vals, 5)
+
+        num_iters = int(args.epoch * data.num_train / args.batch_size)
+        for iter_time in range(num_iters):
+            imgs = data.train_batch(batch_size=args.batch_size)
+
+            for img in imgs:
+                cv2.imshow('Img', img)
+                if cv2.waitKey(0) & 0xFF == 27:
+                    sys.exit('[*] Esc clicked!')
+
 
 if __name__ == '__main__':
     main()
