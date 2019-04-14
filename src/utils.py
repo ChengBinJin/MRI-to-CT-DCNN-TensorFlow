@@ -6,6 +6,7 @@
 # ---------------------------------------------------------
 
 import os
+import sys
 import cv2
 import numpy as np
 import SimpleITK as sitk
@@ -156,10 +157,41 @@ def get_mask(image, task='m2c'):
 
     return mask
 
-def load_data(img_names, is_test=False):
-    imgs = []
+def load_data(img_names, is_test=False, size=256):
+    mrImgs, ctImgs, maskImgs = [], [], []
     for _, img_name in enumerate(img_names):
         img = cv2.imread(img_name, cv2.IMREAD_GRAYSCALE)
-        imgs.append(img)
+        mrImg, ctImg, maskImg = img[:, :size], img[:, size:2*size], img[:, -size:]
 
-    return imgs
+        if not is_test:
+            mrImg, ctImg, maskImg = data_augment(mrImg, ctImg, maskImg)
+
+        mrImgs.append(mrImg)
+        ctImgs.append(ctImg)
+        maskImgs.append(maskImg)
+
+    return np.asarray(mrImgs), np.asarray(ctImgs), np.asarray(maskImgs)
+
+def data_augment(mrImg, ctImg, maskImg, size=256, scope=20):
+    # Random translation
+    jitter = np.random.randint(low=0, high=scope)
+
+    mrImg = cv2.resize(mrImg, dsize=(size+scope, size+scope), interpolation=cv2.INTER_LINEAR)
+    ctImg = cv2.resize(ctImg, dsize=(size+scope, size+scope), interpolation=cv2.INTER_LINEAR)
+    maskImg = cv2.resize(maskImg, dsize=(size+scope, size+scope), interpolation=cv2.INTER_LINEAR)
+
+    mrImg = mrImg[jitter:jitter+size, jitter:jitter+size]
+    ctImg = ctImg[jitter:jitter+size, jitter:jitter+size]
+    maskImg = maskImg[jitter:jitter+size, jitter:jitter+size]
+
+    # Random flip
+    if np.random.uniform() > 0.5:
+        mrImg, ctImg, maskimg = mrImg[:, ::-1], ctImg[:, ::-1], maskImg[:, ::-1]
+
+    return ctImg, mrImg, maskImg
+
+def transform(img):
+    return (img / 127.5 - 1.).astype(np.float32)
+
+def intransform(img):
+    return np.round((img + 1.) * 127.5).astype(np.uint8)

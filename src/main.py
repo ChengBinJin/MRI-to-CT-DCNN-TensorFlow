@@ -42,15 +42,21 @@ def main():
     num_cross_vals = 6
     for idx_cross_val in range(num_cross_vals):
         data = Dataset(args.dataset, num_cross_vals, 5)
+        model = Model(args)
+        solver = Sovler(args)
 
         num_iters = int(args.epoch * data.num_train / args.batch_size)
         for iter_time in range(num_iters):
-            imgs = data.train_batch(batch_size=args.batch_size)
+            mrImgs, ctImgs, maskImgs = data.train_batch(batch_size=args.batch_size)
 
-            for img in imgs:
-                cv2.imshow('Img', img)
-                if cv2.waitKey(0) & 0xFF == 27:
-                    sys.exit('[*] Esc clicked!')
+            print('mrImgs shape: {}'.format(mrImgs.shape))
+            print('ctImgs shape: {}'.format(ctImgs.shape))
+            print('maskImgs shape: {}'.format(maskImgs.shape))
+
+            # for img in imgs:
+            #     cv2.imshow('Img', img)
+            #     if cv2.waitKey(0) & 0xFF == 27:
+            #         sys.exit('[*] Esc clicked!')
 
 
 if __name__ == '__main__':
