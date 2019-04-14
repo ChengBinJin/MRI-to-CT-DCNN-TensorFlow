@@ -24,6 +24,8 @@ parser.add_argument('--dataset', dest='dataset', default='brain01',
                     help='dataset name, default: brain01')
 parser.add_argument('--learning_rate', dest='learning_rate', default=2e-4, type=float,
                     help='learning rate, default: 2e-4')
+parser.add_argument('--weight_decay', dest='weight_decay', default=1e-5, type=float,
+                    help='weight decay, default: 1e-5')
 parser.add_argument('--beta1', dest='beta1', default=0.5, type=float,
                     help='momentum term of Adam, default: 0.5')
 parser.add_argument('--epoch', dest='epoch', default=600, type=int,

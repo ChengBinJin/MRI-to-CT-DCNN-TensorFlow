@@ -6,10 +6,12 @@
 # ---------------------------------------------------------
 
 import os
-import sys
+
 import cv2
 import numpy as np
 import SimpleITK as sitk
+
+
 
 
 def all_files_under(path, extension='png', append_path=True, sort=True):
