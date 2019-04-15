@@ -2,7 +2,7 @@ import os
 import logging
 import tensorflow as tf
 import _pickle as cpickle
-
+from tensorflow.python.training import moving_averages
 
 logger = logging.getLogger(__name__)  # logger
 logger.setLevel(logging.INFO)
@@ -14,6 +14,7 @@ class Model:
         self.input_dims = input_dims
         self.output_dims = output_dims
         self.log_path = log_path
+        self.batch_norm_ops = []
 
         weight_file_path = '../../Models_zoo/caffe_layers_value.pickle'
         self._read_pretrained_weights(weight_file_path)
@@ -31,13 +32,15 @@ class Model:
 
     def _build_net(self, name):
         with tf.variable_scope(name):
-            self.x_ph = tf.placeholder(dtype=tf.float32, shape=[None, *self.input_dims], name='x_ph')
-            self.y_ph = tf.placeholder(dtype=tf.float32, shape=[None, *self.output_dims], name='y_ph')
+            self.x = tf.placeholder(dtype=tf.float32, shape=[None, *self.input_dims], name='x')
+            self.y = tf.placeholder(dtype=tf.float32, shape=[None, *self.output_dims], name='y')
+            self.mask = tf.placeholder(dtype=tf.float32, shape=[None, *self.output_dims], name='mask')
             self.mode = tf.placeholder(dtype=tf.bool, name='train_mode')
 
             # Encoding part
             # 256 x 256 x 64
-            relu1_1 = self.conv_layer_pretrain(self.x_ph, 'conv1_1', trainable=True)
+            data = tf.concat([self.x, self.x, self.x], axis=3)
+            relu1_1 = self.conv_layer_pretrain(data, 'conv1_1', trainable=True)
             relu1_2 = self.conv_layer_pretrain(relu1_1, 'conv1_2', trainable=True)
 
             # 128 x 128 x 128
@@ -97,37 +100,39 @@ class Model:
 
             # 256 x 256 x 1
             self.pred = self.conv_layer(relu1_4, output_dim=1, k_h=1, k_w=1, d_h=1, d_w=1, name='conv1_5')
+            self.masked_pred = tf.math.multiply(self.pred, self.mask)
 
             self.data_loss = self.regress_loss()
-            # self.reg_term = self.args.weight_decay * tf.reduce_sum(
-            #     [tf.nn.l2_loss(weight) for weight in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)])
-            self.reg_term = self.args.weight_decay * tf.losses.get_regularization_loss(scope=self.name)
+            self.reg_term = self.args.weight_decay * tf.reduce_sum(
+                [tf.nn.l2_loss(weight) for weight in tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)])
+            # self.reg_term = self.args.weight_decay * tf.losses.get_regularization_loss(scope=self.name)
             self.total_loss = self.data_loss + self.reg_term
 
-            # When using the batchnormalization layers
-            # it is necessary to manually add the update operations
-            # because the moving averages are not included in the graph
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.name)
-            with tf.control_dependencies(update_ops):
-                self.train_op = tf.train.AdamOptimizer(
-                    learning_rate=self.args.learning_rate, beta1=self.args.beta1).minimize(self.total_loss)
+            # # When using the batchnormalization layers
+            # # it is necessary to manually add the update operations
+            # # because the moving averages are not included in the graph
+            # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.name)
+            # with tf.control_dependencies(update_ops):
+            optim_op = tf.train.AdamOptimizer(
+                learning_rate=self.args.learning_rate, beta1=self.args.beta1).minimize(self.total_loss)
+            train_ops = [optim_op] + self.batch_norm_ops
+            self.train_op = tf.group(*train_ops)
 
             # Measures
             self.mean_absolute_error = tf.reduce_mean(tf.metrics.mean_absolute_error(
-                labels=self.y_ph,
+                labels=self.y,
                 predictions=self.pred))
-            self.mean_error = tf.reduce_mean(self.pred - self.y_ph)
+            self.mean_error = tf.reduce_mean(self.pred - self.y)
             self.mean_squared_error = tf.reduce_mean(tf.metrics.mean_squared_error(
-                labels=self.y_ph,
+                labels=self.y,
                 predictions=self.pred))
             self.pearson_correlation_coefficient = tf.reduce_mean(tf.contrib.metrics.streaming_pearson_correlation(
-                labels=self.y_ph,
+                labels=self.y,
                 predictions=self.pred))
 
     def regress_loss(self):
-        loss = tf.reduce_mean(tf.abs(self.pred, self.y_ph))
+        loss = tf.reduce_mean(tf.abs(tf.math.multiply(self.pred, self.mask) - tf.math.multiply(self.y, self.mask)))
         return loss
-
 
     def conv_layer(self, x, output_dim, k_h=3, k_w=3, d_h=1, d_w=1, stddev=0.02, padding='SAME', name='conv2d',
                    is_print=True):
@@ -141,7 +146,8 @@ class Model:
 
             conv = tf.nn.conv2d(input=x, filter=conv_weights, strides=[1, d_h, d_w, 1], padding=padding)
             bias = tf.nn.bias_add(value=conv, bias=conv_biases)
-            norm = tf.layers.batch_normalization(bias, axis=[0, 1, 2], training=self.mode)
+            # norm = tf.layers.batch_normalization(bias, axis=[0, 1, 2], training=self.mode)
+            norm = self.batch_norm(bias, name='batch_norm', _ops=self.batch_norm_ops, is_train=self.mode)
             relu = tf.nn.relu(norm)
 
             if is_print:
@@ -164,7 +170,7 @@ class Model:
 
             conv = tf.nn.conv2d(input=x, filter=conv_weights, strides=[1, 1, 1, 1], padding='SAME')
             bias = tf.nn.bias_add(value=conv, bias=conv_biases)
-            norm = tf.layers.batch_normalization(bias, axis=[0, 1, 2], training=self.mode)
+            norm = self.batch_norm(bias, name='batch_norm', _ops=self.batch_norm_ops, is_train=self.mode)
             relu = tf.nn.relu(norm)
 
             if is_print:
@@ -183,6 +189,41 @@ class Model:
     def get_bias(self, layer_name):
         layer = self.pretrained_weights[layer_name]
         return layer[1]
+
+    @staticmethod
+    def batch_norm(x, name, _ops, is_train=True):
+        """Batch normalization."""
+        with tf.variable_scope(name):
+            params_shape = [x.get_shape()[-1]]
+
+            beta = tf.get_variable('beta', params_shape, tf.float32,
+                                   initializer=tf.constant_initializer(0.0, tf.float32))
+            gamma = tf.get_variable('gamma', params_shape, tf.float32,
+                                    initializer=tf.constant_initializer(1.0, tf.float32))
+
+            if is_train is True:
+                mean, variance = tf.nn.moments(x, [0, 1, 2], name='moments')
+
+                moving_mean = tf.get_variable('moving_mean', params_shape, tf.float32,
+                                              initializer=tf.constant_initializer(0.0, tf.float32),
+                                              trainable=False)
+                moving_variance = tf.get_variable('moving_variance', params_shape, tf.float32,
+                                                  initializer=tf.constant_initializer(1.0, tf.float32),
+                                                  trainable=False)
+
+                _ops.append(moving_averages.assign_moving_average(moving_mean, mean, 0.9))
+                _ops.append(moving_averages.assign_moving_average(moving_variance, variance, 0.9))
+            else:
+                mean = tf.get_variable('moving_mean', params_shape, tf.float32,
+                                       initializer=tf.constant_initializer(0.0, tf.float32), trainable=False)
+                variance = tf.get_variable('moving_variance', params_shape, tf.float32,
+                                           initializer=tf.constant_initializer(1.0, tf.float32), trainable=False)
+
+            # epsilon used to be 1e-5. Maybe 0.001 solves NaN problem in deeper net.
+            y = tf.nn.batch_normalization(x, mean, variance, beta, gamma, 1e-5)
+            y.set_shape(x.get_shape())
+
+            return y
 
     @staticmethod
     def init_logger(log_path, name):

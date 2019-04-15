@@ -24,16 +24,14 @@ class Dataset(object):
 
     def train_batch(self, batch_size):
         batch_files = np.random.choice(self.train_data, batch_size, replace=False)
-        batch_x = load_data(batch_files, is_test=False)
-
-        return batch_x
+        batch_x, batch_y, batch_mask = load_data(batch_files, is_test=False)
+        return batch_x, batch_y, batch_mask
 
     def val_batch(self):
-        print('Hello val_batch!')
+        x, y, mask = load_data(self.val_data, is_test=True)
+        return x, y, mask
 
 
     def test_batch(self):
-        print('Hello test_batch!')
-
-
-        print(len(self.test_data))
+        x, y, mask = load_data(self.test_data, is_test=True)
+        return x, y, mask

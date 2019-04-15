@@ -168,11 +168,16 @@ def load_data(img_names, is_test=False, size=256):
         if not is_test:
             mrImg, ctImg, maskImg = data_augment(mrImg, ctImg, maskImg)
 
-        mrImgs.append(mrImg)
-        ctImgs.append(ctImg)
-        maskImgs.append(maskImg)
+        # maskImg converte to binary image
+        maskImg[maskImg < 127.5] = 0.
+        maskImg[maskImg >= 127.5] = 1.
 
-    return np.asarray(mrImgs), np.asarray(ctImgs), np.asarray(maskImgs)
+        mrImgs.append(transform(mrImg))
+        ctImgs.append(transform(ctImg))
+        maskImgs.append(maskImg.astype(np.float32))
+
+    return np.expand_dims(np.asarray(mrImgs), axis=3), np.expand_dims(np.asarray(ctImgs), axis=3), \
+           np.expand_dims(np.asarray(maskImgs), axis=3)
 
 def data_augment(mrImg, ctImg, maskImg, size=256, scope=20):
     # Random translation
@@ -196,4 +201,5 @@ def transform(img):
     return (img / 127.5 - 1.).astype(np.float32)
 
 def intransform(img):
+    img = np.squeeze(img)
     return np.round((img + 1.) * 127.5).astype(np.uint8)

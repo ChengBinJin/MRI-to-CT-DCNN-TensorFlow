@@ -2,3 +2,7 @@ src/.idea/
 src/__pycache__/
 .idea/
 imgs/
+src/model/
+src/logs/
+src/sample/
+src/test
