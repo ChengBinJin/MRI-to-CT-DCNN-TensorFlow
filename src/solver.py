@@ -15,7 +15,6 @@ class Solver(object):
         feed = {
             self.model.x: x,
             self.model.y: y,
-            self.model.mask: mask,
             self.model.mode: True
         }
 
@@ -24,7 +23,11 @@ class Solver(object):
         data_loss = self.model.data_loss
         reg_term = self.model.reg_term
 
-        return self.sess.run([train_op, total_loss, data_loss, reg_term], feed_dict=feed)
+        mrImgs = self.model.x
+        preds = self.model.pred
+        ctImgs = self.model.y
+
+        return self.sess.run([train_op, total_loss, data_loss, reg_term, mrImgs, preds, ctImgs], feed_dict=feed)
 
     def evaluate(self, x, y, mask, batch_size):
         num_data = x.shape[0]
@@ -33,12 +36,11 @@ class Solver(object):
         for i in range(0, num_data, batch_size):
             x_batch = x[i:i+batch_size]
             y_batch = y[i:i+batch_size]
-            mask_batch = mask[i:i+batch_size]
+            # mask_batch = mask[i:i+batch_size]
 
             feed = {
                 self.model.x: x_batch,
                 self.model.y: y_batch,
-                self.model.mask: mask_batch,
                 self.model.mode: False
             }
 
@@ -48,7 +50,7 @@ class Solver(object):
         return preds
 
     @staticmethod
-    def save_imgs(x, y, pred, id, save_folder=None):
+    def save_imgs(x, y, pred, id_, save_folder=None):
         num_data, h, w, c = x.shape
 
         for i in range(num_data):
@@ -57,6 +59,6 @@ class Solver(object):
             canvas[:, w:2*w] = intransform(pred[i])     # Predicted CT image
             canvas[:, -w:] = intransform(y[i])          # GT CT image
 
-            imgName = os.path.join(save_folder, '{}_{}'.format(str(id).zfill(6), str(i).zfill(3))) + '.png'
+            imgName = os.path.join(save_folder, '{}_{}'.format(str(id_).zfill(6), str(i).zfill(3))) + '.png'
             cv2.imwrite(imgName, canvas)
 

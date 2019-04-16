@@ -6,7 +6,6 @@
 # ---------------------------------------------------------
 
 import os
-
 import cv2
 import numpy as np
 import SimpleITK as sitk
@@ -195,11 +194,13 @@ def data_augment(mrImg, ctImg, maskImg, size=256, scope=20):
     if np.random.uniform() > 0.5:
         mrImg, ctImg, maskimg = mrImg[:, ::-1], ctImg[:, ::-1], maskImg[:, ::-1]
 
-    return ctImg, mrImg, maskImg
+    return mrImg, ctImg, maskImg
 
 def transform(img):
-    return (img / 127.5 - 1.).astype(np.float32)
+    # return (img / 127.5 - 1.).astype(np.float32)
+    return (img - 127.5).astype(np.float32)
 
 def intransform(img):
     img = np.squeeze(img)
-    return np.round((img + 1.) * 127.5).astype(np.uint8)
+    # return np.round((img + 1.) * 127.5).astype(np.uint8)
+    return np.round(img + 127.5).astype(np.uint8)

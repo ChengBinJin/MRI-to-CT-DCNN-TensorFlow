@@ -23,7 +23,8 @@ class Dataset(object):
         self.num_test = len(self.test_data)
 
     def train_batch(self, batch_size):
-        batch_files = np.random.choice(self.train_data, batch_size, replace=False)
+        # batch_files = np.random.choice(self.train_data, batch_size, replace=False)
+        batch_files = self.train_data[:batch_size]
         batch_x, batch_y, batch_mask = load_data(batch_files, is_test=False)
         return batch_x, batch_y, batch_mask
 

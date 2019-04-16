@@ -5,8 +5,6 @@
 # Email: sbkim0407@gmail.com
 # ---------------------------------------------------------
 import os
-# import sys
-# import cv2
 import argparse
 import numpy as np
 import tensorflow as tf
@@ -25,15 +23,13 @@ parser.add_argument('--batch_size', dest='batch_size', default=4, type=int,
                     help='batch size for one iteration')
 parser.add_argument('--dataset', dest='dataset', default='brain01',
                     help='dataset name, default: brain01')
-parser.add_argument('--learning_rate', dest='learning_rate', default=5e-3, type=float,
+parser.add_argument('--learning_rate', dest='learning_rate', default=1e-3, type=float,
                     help='learning rate, default: 2e-4')
-parser.add_argument('--weight_decay', dest='weight_decay', default=1e-5, type=float,
+parser.add_argument('--weight_decay', dest='weight_decay', default=1e-4, type=float,
                     help='weight decay, default: 1e-5')
-parser.add_argument('--beta1', dest='beta1', default=0.5, type=float,
-                    help='momentum term of Adam, default: 0.5')
 parser.add_argument('--epoch', dest='epoch', default=600, type=int,
                     help='number of epochs, default: 600')
-parser.add_argument('--print_freq', dest='print_freq', default=100, type=int,
+parser.add_argument('--print_freq', dest='print_freq', default=10, type=int,
                     help='print frequency for loss, default: 100')
 parser.add_argument('--load_model', dest='load_model', default=None,
                     help='folder of saved model that you wish to continue training, '
@@ -100,18 +96,21 @@ def main():
         num_iters = int(args.epoch * data.num_train / args.batch_size)
         for iter_time in range(num_iters):
             mrImgs, ctImgs, maskImgs = data.train_batch(batch_size=args.batch_size)
-            _, total_loss, data_loss, reg_term = solver.train(mrImgs, ctImgs, maskImgs)
+            _, total_loss, data_loss, reg_term, mrImgs_, preds, ctImgs_ = solver.train(mrImgs, ctImgs, maskImgs)
 
             if np.mod(iter_time, args.print_freq) == 0:
-                print('{} / {} Total Loss: {:.3f}, Data Loss: {:.3f}, Reg Term: {:.3f}'.format(
+                print('{} / {} Total Loss: {}, Data Loss: {}, Reg Term: {}'.format(
                     iter_time, num_iters, total_loss, data_loss, reg_term))
 
-            if np.mod(iter_time, 1000) == 0:
-                print('Evaluate...')
-                mrImgs, ctImgs, maskImgs = data.val_batch()
-                preds = solver.evaluate(mrImgs, ctImgs, maskImgs, batch_size=args.batch_size)
+            if np.mod(iter_time, 100) == 0:
+                solver.save_imgs(mrImgs_, ctImgs_, preds, iter_time, save_folder=sampel_dir)
 
-                solver.save_imgs(mrImgs, ctImgs, preds, iter_time, save_folder=sampel_dir)
+            # if np.mod(iter_time, 1000) == 0:
+            #     print('Evaluate...')
+            #     mrImgs, ctImgs, maskImgs = data.val_batch()
+            #     preds = solver.evaluate(mrImgs, ctImgs, maskImgs, batch_size=args.batch_size)
+            #
+            #     solver.save_imgs(mrImgs, ctImgs, preds, iter_time, save_folder=sampel_dir)
 
 
 
