@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import tensorflow as tf
 
 from utils import intransform
 
@@ -49,8 +50,11 @@ class Solver(object):
 
         return preds
 
+    def init(self):
+        self.sess.run(tf.global_variables_initializer())
+
     @staticmethod
-    def save_imgs(x, y, pred, id_, save_folder=None):
+    def save_imgs(x, y, pred, iter_time, save_folder=None):
         num_data, h, w, c = x.shape
 
         for i in range(num_data):
@@ -59,6 +63,6 @@ class Solver(object):
             canvas[:, w:2*w] = intransform(pred[i])     # Predicted CT image
             canvas[:, -w:] = intransform(y[i])          # GT CT image
 
-            imgName = os.path.join(save_folder, '{}_{}'.format(str(id_).zfill(6), str(i).zfill(3))) + '.png'
+            imgName = os.path.join(save_folder, '{}_{}'.format(str(iter_time).zfill(6), str(i).zfill(3))) + '.png'
             cv2.imwrite(imgName, canvas)
 

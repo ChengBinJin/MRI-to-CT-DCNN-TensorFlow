@@ -1,5 +1,6 @@
 import os
 import logging
+import numpy as np
 import tensorflow as tf
 import _pickle as cpickle
 from tensorflow.python.training import moving_averages
@@ -8,21 +9,20 @@ logger = logging.getLogger(__name__)  # logger
 logger.setLevel(logging.INFO)
 
 class Model:
-    def __init__(self, args, name, input_dims, output_dims, num_iters=10000, log_path=None):
+    def __init__(self, args, name, input_dims, output_dims, log_path=None):
         self.args = args
         self.name = name
         self.input_dims = input_dims
         self.output_dims = output_dims
         self.log_path = log_path
         self.batch_norm_ops = []
-        self.start_decay_step = int(num_iters / 2)
-        self.decay_steps = num_iters - self.start_decay_step
 
         weight_file_path = '../../Models_zoo/caffe_layers_value.pickle'
         self._read_pretrained_weights(weight_file_path)
 
         self._init_logger()     # init logger
         self._build_net(self.name)
+        self.show_all_variables()
 
     def _read_pretrained_weights(self, path):
         with open(path, 'rb') as f:
@@ -34,8 +34,8 @@ class Model:
 
     def _build_net(self, name):
         with tf.variable_scope(name):
-            self.x = tf.placeholder(dtype=tf.float32, shape=[self.args.batch_size, *self.input_dims], name='x')
-            self.y = tf.placeholder(dtype=tf.float32, shape=[self.args.batch_size, *self.output_dims], name='y')
+            self.x = tf.placeholder(dtype=tf.float32, shape=[None, *self.input_dims], name='x')
+            self.y = tf.placeholder(dtype=tf.float32, shape=[None, *self.output_dims], name='y')
             self.mode = tf.placeholder(dtype=tf.bool, name='train_mode')
 
             # Encoding part
@@ -108,14 +108,7 @@ class Model:
             # self.reg_term = self.args.weight_decay * tf.losses.get_regularization_loss(scope=self.name)
             self.total_loss = self.data_loss + self.reg_term
 
-            # When using the batchnormalization layers
-            # it is necessary to manually add the update operations
-            # because the moving averages are not included in the graph
-            # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, scope=self.name)
-            # with tf.control_dependencies(update_ops):
-            #     self.train_op = tf.train.AdamOptimizer(learning_rate=self.args.learning_rate).minimize(self.total_loss)
-
-            optim_op = self.optimizer(self.total_loss)
+            optim_op = tf.train.AdamOptimizer(self.args.learning_rate).minimize(self.total_loss)
             train_ops = [optim_op] + self.batch_norm_ops
             self.train_op = tf.group(*train_ops)
 
@@ -131,32 +124,11 @@ class Model:
                 labels=self.y,
                 predictions=self.pred))
 
-    def optimizer(self, loss, name='Adam'):
-        with tf.variable_scope(name):
-            global_step = tf.Variable(0, trainable=False)
-            starter_learning_rate = self.args.learning_rate
-            end_learning_rate = 0.
-            starte_decay_step = self.start_decay_step
-            decay_steps = self.decay_steps
-
-            learning_rate = (tf.where(tf.greater_equal(global_step, starte_decay_step),
-                                      tf.train.polynomial_decay(starter_learning_rate,
-                                                                global_step - starte_decay_step,
-                                                                decay_steps, end_learning_rate, power=2.0),
-                                      starter_learning_rate))
-            tf.summary.scalar('{}/learning_rate'.format(name), learning_rate)
-
-            learn_step = tf.train.AdamOptimizer(learning_rate).minimize(loss, global_step=global_step)
-
-            return learn_step
 
 
     @staticmethod
     def regress_loss(pred, y):
-        loss = tf.reduce_mean(tf.abs(pred - y))
-        # loss = tf.reduce_sum((pred - y) * (pred - y))
-        # loss = tf.losses.mean_squared_error(labels=y, predictions=pred)
-        return loss
+        return tf.reduce_mean(tf.abs(pred - y))
 
     @staticmethod
     def last_conv2d(x, output_dim, k_h=3, k_w=3, d_h=1, d_w=1, stddev=0.02, padding='SAME', name='conv2d'):
@@ -185,7 +157,6 @@ class Model:
 
             conv = tf.nn.conv2d(input=x, filter=conv_weights, strides=[1, d_h, d_w, 1], padding=padding)
             bias = tf.nn.bias_add(value=conv, bias=conv_biases)
-            # norm = tf.layers.batch_normalization(bias, axis=[0, 1, 2], training=self.mode)
             norm = self.batch_norm(bias, name='batch_norm', _ops=self.batch_norm_ops, is_train=self.mode)
             relu = tf.nn.relu(norm)
 
@@ -209,7 +180,6 @@ class Model:
 
             conv = tf.nn.conv2d(input=x, filter=conv_weights, strides=[1, 1, 1, 1], padding='SAME')
             bias = tf.nn.bias_add(value=conv, bias=conv_biases)
-            # norm = tf.layers.batch_normalization(bias, axis=[0, 1, 2], training=self.mode)
             norm = self.batch_norm(bias, name='batch_norm', _ops=self.batch_norm_ops, is_train=self.mode)
             relu = tf.nn.relu(norm)
 
@@ -293,3 +263,13 @@ class Model:
     @staticmethod
     def print_activations(t):
         logger.info(t.op.name + '{}'.format(t.get_shape().as_list()))
+
+    @staticmethod
+    def show_all_variables():
+        total_count = 0
+        for idx, op in enumerate(tf.trainable_variables()):
+            shape = op.get_shape()
+            count = np.prod(shape)
+            logger.info("[%2d] %s %s = %s" % (idx, op.name, shape, count))
+            total_count += int(count)
+        logger.info("[Total] variable size: %s" % "{:,}".format(total_count))
