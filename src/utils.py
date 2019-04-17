@@ -9,8 +9,7 @@ import os
 import cv2
 import numpy as np
 import SimpleITK as sitk
-
-
+from scipy.stats import pearsonr
 
 
 def all_files_under(path, extension='png', append_path=True, sort=True):
@@ -173,7 +172,7 @@ def load_data(img_names, is_test=False, size=256):
 
         mrImgs.append(transform(mrImg))
         ctImgs.append(transform(ctImg))
-        maskImgs.append(maskImg.astype(np.float32))
+        maskImgs.append(maskImg.astype(np.uint8))
 
     return np.expand_dims(np.asarray(mrImgs), axis=3), np.expand_dims(np.asarray(ctImgs), axis=3), \
            np.expand_dims(np.asarray(maskImgs), axis=3)
@@ -197,10 +196,39 @@ def data_augment(mrImg, ctImg, maskImg, size=256, scope=20):
     return mrImg, ctImg, maskImg
 
 def transform(img):
-    # return (img / 127.5 - 1.).astype(np.float32)
     return (img - 127.5).astype(np.float32)
 
-def intransform(img):
-    img = np.squeeze(img)
-    # return np.round((img + 1.) * 127.5).astype(np.uint8)
-    return np.round(img + 127.5).astype(np.uint8)
+def inv_transform(img, max_value=255., min_value=0., is_squeeze=True, dtype=np.uint8):
+    if is_squeeze:
+        img = np.squeeze(img)           # (N, H, W, 1) to (N, H, W)
+
+    img = np.round(img + 127.5)     # (-127.5~127.5) to (0~255)
+    img[img>max_value] = max_value
+    img[img<min_value] = min_value
+
+    return img.astype(dtype)
+
+def cal_mae(gts, preds):
+    num_data, h, w, _ = gts.shape
+    # mae = np.sum(np.abs(preds - gts)) / (num_data * h * w)
+    mae = np.mean(np.abs(preds - gts))
+
+    return mae
+
+def cal_me(gts, preds):
+    num_data, h, w, _ = gts.shape
+    # me = np.sum(preds - gts) / (num_data * h * w)
+    me = np.mean(preds - gts)
+
+    return me
+
+def cal_mse(gts, preds):
+    num_data, h, w, _ = gts.shape
+    # mse = np.sum(np.abs(preds - gts)**2) / (num_data * h * w)
+    mse = np.mean((np.abs(preds - gts))**2)
+    return mse
+
+def cal_pcc(gts, preds):
+    pcc, _ = pearsonr(gts.ravel(), preds.ravel())
+    return pcc
+

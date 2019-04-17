@@ -5,6 +5,7 @@
 # Email: sbkim0407@gmail.com
 # ---------------------------------------------------------
 import os
+import sys
 import logging
 import argparse
 import numpy as np
@@ -22,13 +23,14 @@ parser.add_argument('--batch_size', dest='batch_size', default=4, type=int, help
 parser.add_argument('--dataset', dest='dataset', default='brain01', help='dataset name, default: brain01')
 parser.add_argument('--learning_rate', dest='learning_rate', default=1e-3, type=float, help='learning rate, default: 2e-4')
 parser.add_argument('--weight_decay', dest='weight_decay', default=1e-4, type=float, help='weight decay, default: 1e-5')
-parser.add_argument('--epoch', dest='epoch', default=1, type=int, help='number of epochs, default: 600')
+parser.add_argument('--epoch', dest='epoch', default=3, type=int, help='number of epochs, default: 600')
 parser.add_argument('--print_freq', dest='print_freq', default=10, type=int, help='print frequency for loss, default: 100')
 parser.add_argument('--load_model', dest='load_model', default=None, help='folder of saved model that you wish to continue training, (e.g., 20190411-2217), default: None')
 args = parser.parse_args()
 
 logger = logging.getLogger(__name__)  # logger
 logger.setLevel(logging.INFO)
+
 
 def init_logger(log_dir):
     formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
@@ -90,7 +92,7 @@ def make_folders(is_train=True, load_model=None, dataset=None):
 def main():
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_index
 
-    model_dir, sampel_dir, log_dir, test_dir = make_folders(is_train=args.is_train,
+    model_dir, sample_dir, log_dir, test_dir = make_folders(is_train=args.is_train,
                                                             load_model=args.load_model,
                                                             dataset=args.dataset)
     init_logger(log_dir)  # init logger
@@ -105,11 +107,17 @@ def main():
     model = Model(args, name='UNet', input_dims=(256, 256, 1), output_dims=(256, 256, 1), log_path=log_dir)
     solver = Solver(sess, model)
 
-    for model_id in range(num_cross_vals):
-        saver = tf.train.Saver(max_to_keep=1)
+    if args.is_train:
+        train(num_cross_vals, model_dir, sample_dir, log_dir, solver)
+    else:
+        test(num_cross_vals, model_dir, test_dir, solver)
 
+
+def train(num_cross_vals, model_dir, sample_dir, log_dir, solver):
+    for model_id in range(num_cross_vals):
         model_sub_dir = os.path.join(model_dir, 'model' + str(model_id))
-        sample_sub_dir = os.path.join(sampel_dir, 'model' + str(model_id))
+        sample_sub_dir = os.path.join(sample_dir, 'model' + str(model_id))
+        log_sub_dir = os.path.join(log_dir, 'model' + str(model_id))
 
         if not os.path.isdir(model_sub_dir):
             os.makedirs(model_sub_dir)
@@ -117,30 +125,94 @@ def main():
         if not os.path.isdir(sample_sub_dir):
             os.makedirs(sample_sub_dir)
 
-        data = Dataset(args.dataset, num_cross_vals, 5)
+        if not os.path.isdir(log_sub_dir):
+            os.makedirs(log_sub_dir)
+
+        saver = tf.train.Saver(max_to_keep=1)
+        tb_writer = tf.summary.FileWriter(log_sub_dir, graph_def=solver.sess.graph)
+        data = Dataset(args.dataset, num_cross_vals, model_id)
         solver.init()  # initialize model weights
+        best_mae = sys.float_info.max
 
         num_iters = int(args.epoch * data.num_train / args.batch_size)
         for iter_time in range(num_iters):
             mrImgs, ctImgs, maskImgs = data.train_batch(batch_size=args.batch_size)
-            _, total_loss, data_loss, reg_term, mrImgs_, preds, ctImgs_ = solver.train(mrImgs, ctImgs, maskImgs)
+            _, total_loss, data_loss, reg_term, mrImgs_, preds, ctImgs_, summary = solver.train(mrImgs, ctImgs)
+            tb_writer.add_summary(summary, iter_time)
+            tb_writer.flush()
 
             if np.mod(iter_time, args.print_freq) == 0:
-                print('Model id: {}, {} / {} Total Loss: {}, Data Loss: {}, Reg Term: {}'.format(
+                print('Model id: {}, {} / {} Total Loss: {:.3f}, Data Loss: {:.3f}, Reg Term: {:.3f}'.format(
                     model_id, iter_time, num_iters, total_loss, data_loss, reg_term))
 
-            if np.mod(iter_time + 1, int(data.num_train / args.batch_size)) == 0:
+            if (np.mod(iter_time + 1, int(data.num_train / args.batch_size)) == 0) or (iter_time + 1 == num_iters):
                 mrImgs, ctImgs, maskImgs = data.val_batch()
-                preds = solver.evaluate(mrImgs, ctImgs, maskImgs, batch_size=args.batch_size)
+                preds = solver.test(mrImgs, batch_size=args.batch_size)
+                mae = solver.evaluate(ctImgs, preds)
+
+                # Save validation results
                 solver.save_imgs(mrImgs, ctImgs, preds, iter_time, save_folder=sample_sub_dir)
 
-                # is satisfy:
-                    # save_model(saver, solver, model_sub_dir, model_id, iter_time)
+                if mae < best_mae:
+                    print('MAE: {:.3f}, Best MAE: {:.3f}'.format(mae, best_mae))
+                    best_mae = mae
+                    save_model(saver, solver, model_sub_dir, model_id, iter_time)
+
+
+def test(num_cross_vals, model_dir, test_dir, solver):
+    mae = np.zeros(num_cross_vals, dtype=np.float32)    # Mean Absolute Error
+    me = np.zeros(num_cross_vals, dtype=np.float32)     # Mean Error
+    mse = np.zeros(num_cross_vals, dtype=np.float32)    # Mean Squared Error
+    pcc = np.zeros(num_cross_vals, dtype=np.float32)    # Pearson Correlation Coefficient
+
+    for model_id in range(num_cross_vals):
+        model_sub_dir = os.path.join(model_dir, 'model' + str(model_id))
+        test_sub_dir = os.path.join(test_dir, 'model' + str(model_id))
+        if not os.path.isdir(test_sub_dir):
+            os.makedirs(test_sub_dir)
+
+        data = Dataset(args.dataset, num_cross_vals, model_id)
+
+        saver = tf.train.Saver(max_to_keep=1)
+        solver.init()
+        if restore_model(saver, solver, model_sub_dir, model_id):  # Restore models
+            logger.info(' [*] Load model ID: {} SUCCESS!'.format(model_id))
+        else:
+            logger.info(' [!] Load model ID: {} Failed...'.format(model_id))
+            sys.exit(' [!] Cannot find checkpoint...')
+
+        mrImgs, ctImgs, maskImgs = data.test_batch()
+        preds = solver.test(mrImgs, batch_size=args.batch_size)
+        mae[model_id], me[model_id], mse[model_id], pcc[model_id]  = solver.evaluate(ctImgs, preds, maskImgs)
+
+        # save imgs
+        solver.save_imgs(mrImgs, ctImgs, preds, maskImgs, save_folder=test_sub_dir)
+
+    for model_id in range(num_cross_vals):
+        print('Model ID: {} - MAE: {:.3f}, ME: {:.3f}, MSE: {:.3f}, PCC: {:.3f}'.format(
+            model_id, mae[model_id], me[model_id], mse[model_id], pcc[model_id]))
+
+    print('Avearge MAE: {:.3f}'.format(np.mean(mae)))
+    print('Average ME: {:.3f}'.format(np.mean(me)))
+    print('Average MSE: {:.3f}'.format(np.mean(mse)))
+    print('Average PCC: {:.3f}'.format(np.mean(pcc)))
 
 
 def save_model(saver, solver, model_dir, model_id, iter_time):
     saver.save(solver.sess, os.path.join(model_dir, 'model'), global_step=iter_time)
     logger.info(' [*] Model saved! Model ID: {}, Iter: {}'.format(model_id, iter_time))
+
+
+def restore_model(saver, solver, model_dir, model_id):
+    logger.info(' [*] Reading model: {} checkpoint...'.format(model_id))
+
+    ckpt = tf.train.get_checkpoint_state(model_dir)
+    if ckpt and ckpt.model_checkpoint_path:
+        ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
+        saver.restore(solver.sess, os.path.join(model_dir, ckpt_name))
+        return True
+    else:
+        return False
 
 
 if __name__ == '__main__':

@@ -22,6 +22,7 @@ class Model:
 
         self._init_logger()     # init logger
         self._build_net(self.name)
+        self._tensorboard()
         self.show_all_variables()
 
     def _read_pretrained_weights(self, path):
@@ -112,19 +113,11 @@ class Model:
             train_ops = [optim_op] + self.batch_norm_ops
             self.train_op = tf.group(*train_ops)
 
-            # Measures
-            self.mean_absolute_error = tf.reduce_mean(tf.metrics.mean_absolute_error(
-                labels=self.y,
-                predictions=self.pred))
-            self.mean_error = tf.reduce_mean(self.pred - self.y)
-            self.mean_squared_error = tf.reduce_mean(tf.metrics.mean_squared_error(
-                labels=self.y,
-                predictions=self.pred))
-            self.pearson_correlation_coefficient = tf.reduce_mean(tf.contrib.metrics.streaming_pearson_correlation(
-                labels=self.y,
-                predictions=self.pred))
-
-
+    def _tensorboard(self):
+        tf.summary.scalar('loss/total_loss', self.total_loss)
+        tf.summary.scalar('loss/data_loss', self.data_loss)
+        tf.summary.scalar('loss/reg_term', self.reg_term)
+        self.summary_op = tf.summary.merge_all()
 
     @staticmethod
     def regress_loss(pred, y):
