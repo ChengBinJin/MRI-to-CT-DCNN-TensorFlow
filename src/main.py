@@ -129,7 +129,7 @@ def train(num_cross_vals, model_dir, sample_dir, log_dir, solver):
             os.makedirs(log_sub_dir)
 
         saver = tf.train.Saver(max_to_keep=1)
-        tb_writer = tf.summary.FileWriter(log_sub_dir, graph_def=solver.sess.graph)
+        tb_writer = tf.summary.FileWriter(log_sub_dir, graph_def=solver.sess.graph_def)
         data = Dataset(args.dataset, num_cross_vals, model_id)
         solver.init()  # initialize model weights
         best_mae = sys.float_info.max
