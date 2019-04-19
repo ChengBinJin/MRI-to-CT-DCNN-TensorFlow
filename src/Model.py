@@ -48,7 +48,11 @@ class Model:
             self.x = tf.placeholder(dtype=tf.float32, shape=[None, *self.input_dims], name='x')
             self.y = tf.placeholder(dtype=tf.float32, shape=[None, *self.output_dims], name='y')
             self.mode = tf.placeholder(dtype=tf.bool, name='train_mode')
+
             self.mae = tf.placeholder(dtype=tf.float32, name='MAE')
+            self.me = tf.placeholder(dtype=tf.float32, name='ME')
+            self.mse = tf.placeholder(dtype=tf.float32, name='MSE')
+            self.pcc = tf.placeholder(dtype=tf.float32, name='PCC')
 
             # Encoding part
             # 256 x 256 x 64
@@ -129,7 +133,11 @@ class Model:
         tf.summary.scalar('Loss/Data Loss', self.data_loss)
         tf.summary.scalar('Loss/Reg Term', self.reg_term)
         self.summary_op = tf.summary.merge_all()
-        self.summary_val = tf.summary.scalar('Acc/MAE', self.mae)
+
+        self.summary_val = tf.summary.merge(inputs=[tf.summary.scalar('Acc/MAE', self.mae),
+                                                    tf.summary.scalar('Acc/ME', self.me),
+                                                    tf.summary.scalar('Acc/RMSE', self.mse),
+                                                    tf.summary.scalar('Acc/PCC', self.pcc)], name='Acc')
 
     @staticmethod
     def regress_loss(pred, y):

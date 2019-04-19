@@ -9,6 +9,7 @@ import sys
 import logging
 import argparse
 import numpy as np
+import matplotlib.pyplot as plt; plt.rcdefaults()
 import tensorflow as tf
 from datetime import datetime
 
@@ -36,6 +37,7 @@ def init_logger(log_dir):
     formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
     # file handler
     file_handler = logging.FileHandler(os.path.join(log_dir, 'main.log'))
+    file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)
     # stream handler
     stream_handler = logging.StreamHandler()
@@ -204,6 +206,27 @@ def test(num_cross_vals, model_dir, test_dir, solver):
     print('Average ME: {:.3f}'.format(np.mean(me)))
     print('Average MSE: {:.3f}'.format(np.mean(mse)))
     print('Average PCC: {:.3f}'.format(np.mean(pcc)))
+
+    bar_plot(num_cross_vals, mae, me, mse, pcc, names=['MAE', 'ME', 'MSE', 'PCC'], save_folder=test_dir)
+
+
+def bar_plot(num_cross_vals, mae, me, mse, pcc, names, save_folder):
+    y_pos = np.arange(num_cross_vals+1)
+
+    measures = np.zeros((len(names), num_cross_vals+1), dtype=np.float32)
+    measures[0, :-1], measures[0, -1] = mae, np.mean(mae)
+    measures[1, :-1], measures[1, -1] = me, np.mean(me)
+    measures[2, :-1], measures[2, -1] = mse, np.mean(mse)
+    measures[3, :-1], measures[3, -1] = pcc, np.mean(pcc)
+
+    for i in range(len(names)):
+        performance = measures[i, :]
+
+        plt.bar(y_pos, performance, align='center', alpha=0.5)
+        plt.xticks(y_pos, ['Model_0', 'Model_1', 'Model_2', 'Model_3', 'Model_4', 'Model_5', 'Average'])
+        plt.ylabel(names[i])
+        plt.savefig(os.path.join(save_folder, names[i] + '.png'), dpi=300)
+        plt.close()
 
 
 def save_model(saver, solver, model_dir, model_id, iter_time):

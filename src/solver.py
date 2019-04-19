@@ -58,15 +58,23 @@ class Solver(object):
         gts_ = inv_transform(gts, is_squeeze=False, dtype=np.float32) * masks
         preds_ = inv_transform(preds, is_squeeze=False, dtype=np.float32) * masks
 
+        mae = cal_mae(gts_, preds_)
+        me = cal_me(gts_, preds_)
+        mse = cal_mse(gts_, preds_)
+        pcc = cal_pcc(gts_, preds_)
+
         if is_train:
-            mae = cal_mae(gts_, preds_)
-            summary = self.sess.run(self.model.summary_val, feed_dict={self.model.mae: mae})
+            feed = {
+                self.model.mae: mae,
+                self.model.me: me,
+                self.model.mse: mse,
+                self.model.pcc: pcc
+            }
+
+            summary = self.sess.run(self.model.summary_val, feed_dict=feed)
+
             return mae, summary
         else:
-            mae = cal_mae(gts_, preds_)
-            me = cal_me(gts_, preds_)
-            mse = cal_mse(gts_, preds_)
-            pcc = cal_pcc(gts_, preds_)
             return mae, me, mse, pcc
 
     @staticmethod
