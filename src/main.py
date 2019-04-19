@@ -95,6 +95,8 @@ def main():
     model_dir, sample_dir, log_dir, test_dir = make_folders(is_train=args.is_train,
                                                             load_model=args.load_model,
                                                             dataset=args.dataset)
+    print('log_dir: {}'.format(log_dir))
+
     init_logger(log_dir)  # init logger
 
     # Initialize session
@@ -134,6 +136,7 @@ def train(num_cross_vals, model_dir, sample_dir, log_dir, solver):
         solver.init()  # initialize model weights
         best_mae = sys.float_info.max
 
+        epoch_time = 0
         num_iters = int(args.epoch * data.num_train / args.batch_size)
         for iter_time in range(num_iters):
             mrImgs, ctImgs, maskImgs = data.train_batch(batch_size=args.batch_size)
@@ -146,15 +149,20 @@ def train(num_cross_vals, model_dir, sample_dir, log_dir, solver):
                     model_id, iter_time, num_iters, total_loss, data_loss, reg_term))
 
             if (np.mod(iter_time + 1, int(data.num_train / args.batch_size)) == 0) or (iter_time + 1 == num_iters):
+                epoch_time += 1
+
                 mrImgs, ctImgs, maskImgs = data.val_batch()
                 preds = solver.test(mrImgs, batch_size=args.batch_size)
-                mae = solver.evaluate(ctImgs, preds)
+                mae, summary = solver.evaluate(ctImgs, preds, maskImgs, is_train=True)
+                print('Epoch: {}, MAE: {:.3f}, Best MAE: {:.3f}'.format(epoch_time, mae, best_mae))
+
+                # write to tensorbaord
+                tb_writer.add_summary(summary, epoch_time)
 
                 # Save validation results
-                solver.save_imgs(mrImgs, ctImgs, preds, iter_time, save_folder=sample_sub_dir)
+                solver.save_imgs(mrImgs, ctImgs, preds, maskImgs, iter_time, save_folder=sample_sub_dir)
 
                 if mae < best_mae:
-                    print('MAE: {:.3f}, Best MAE: {:.3f}'.format(mae, best_mae))
                     best_mae = mae
                     save_model(saver, solver, model_sub_dir, model_id, iter_time)
 
@@ -183,7 +191,7 @@ def test(num_cross_vals, model_dir, test_dir, solver):
 
         mrImgs, ctImgs, maskImgs = data.test_batch()
         preds = solver.test(mrImgs, batch_size=args.batch_size)
-        mae[model_id], me[model_id], mse[model_id], pcc[model_id]  = solver.evaluate(ctImgs, preds, maskImgs)
+        mae[model_id], me[model_id], mse[model_id], pcc[model_id]  = solver.evaluate(ctImgs, preds, maskImgs, is_train=False)
 
         # save imgs
         solver.save_imgs(mrImgs, ctImgs, preds, maskImgs, save_folder=test_sub_dir)

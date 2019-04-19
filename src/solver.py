@@ -36,33 +36,38 @@ class Solver(object):
         num_data = x.shape[0]
         preds = np.zeros_like(x)
 
-        for i in range(0, num_data, batch_size):
-            x_batch = x[i:i+batch_size]
+        i = 0
+        while i < num_data:
+            # The ending index for the next bach is denoted j.
+            j = min(i + batch_size, num_data)
 
             feed = {
-                self.model.x: x_batch,
+                self.model.x: x[i:j, :],
                 self.model.mode: False
             }
 
-            step_preds = self.sess.run(self.model.pred, feed_dict=feed)
-            preds[i:i+batch_size] = step_preds
+            preds[i:j] = self.sess.run(self.model.pred, feed_dict=feed)
+            i = j
 
         return preds
 
     def init(self):
         self.sess.run(tf.global_variables_initializer())
 
-    @staticmethod
-    def evaluate(gts, preds, masks):
-        gts_ = intransform(gts, is_squeeze=False, dtype=np.float32) * masks
-        preds_ = intransform(preds, is_squeeze=False, dtype=np.float32) * masks
+    def evaluate(self, gts, preds, masks, is_train=True):
+        gts_ = inv_transform(gts, is_squeeze=False, dtype=np.float32) * masks
+        preds_ = inv_transform(preds, is_squeeze=False, dtype=np.float32) * masks
 
-        mae = cal_mae(gts_, preds_)
-        me = cal_me(gts_, preds_)
-        mse = cal_mse(gts_, preds_)
-        pcc = cal_pcc(gts_, preds_)
-
-        return mae, me, mse, pcc
+        if is_train:
+            mae = cal_mae(gts_, preds_)
+            summary = self.sess.run(self.model.summary_val, feed_dict={self.model.mae: mae})
+            return mae, summary
+        else:
+            mae = cal_mae(gts_, preds_)
+            me = cal_me(gts_, preds_)
+            mse = cal_mse(gts_, preds_)
+            pcc = cal_pcc(gts_, preds_)
+            return mae, me, mse, pcc
 
     @staticmethod
     def save_imgs(mrImgs, ctImgs, preds, masks, iter_time=None, save_folder=None):

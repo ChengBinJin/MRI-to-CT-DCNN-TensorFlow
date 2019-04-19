@@ -23,7 +23,7 @@ class Model:
         self._init_logger()     # init logger
         self._build_net(self.name)
         self._tensorboard()
-        self.show_all_variables()
+        self.show_all_variables(is_train=self.args.is_train)
 
     def _read_pretrained_weights(self, path):
         with open(path, 'rb') as f:
@@ -31,13 +31,24 @@ class Model:
 
     def _init_logger(self):
         if self.args.is_train:
-            self.init_logger(self.log_path, name='model.log')
+            formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
+            # file handler
+            file_handler = logging.FileHandler(os.path.join(self.log_path, 'model.log'))
+            file_handler.setFormatter(formatter)
+            file_handler.setLevel(logging.INFO)
+            # stream handler
+            stream_handler = logging.StreamHandler()
+            stream_handler.setFormatter(formatter)
+            # add hanlders
+            logger.addHandler(file_handler)
+            logger.addHandler(stream_handler)
 
     def _build_net(self, name):
         with tf.variable_scope(name):
             self.x = tf.placeholder(dtype=tf.float32, shape=[None, *self.input_dims], name='x')
             self.y = tf.placeholder(dtype=tf.float32, shape=[None, *self.output_dims], name='y')
             self.mode = tf.placeholder(dtype=tf.bool, name='train_mode')
+            self.mae = tf.placeholder(dtype=tf.float32, name='MAE')
 
             # Encoding part
             # 256 x 256 x 64
@@ -114,10 +125,11 @@ class Model:
             self.train_op = tf.group(*train_ops)
 
     def _tensorboard(self):
-        tf.summary.scalar('loss/total_loss', self.total_loss)
-        tf.summary.scalar('loss/data_loss', self.data_loss)
-        tf.summary.scalar('loss/reg_term', self.reg_term)
+        tf.summary.scalar('Loss/Total Loss', self.total_loss)
+        tf.summary.scalar('Loss/Data Loss', self.data_loss)
+        tf.summary.scalar('Loss/Reg Term', self.reg_term)
         self.summary_op = tf.summary.merge_all()
+        self.summary_val = tf.summary.scalar('Acc/MAE', self.mae)
 
     @staticmethod
     def regress_loss(pred, y):
@@ -229,20 +241,6 @@ class Model:
             return y
 
     @staticmethod
-    def init_logger(log_path, name):
-        formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
-        # file handler
-        file_handler = logging.FileHandler(os.path.join(log_path, name))
-        file_handler.setFormatter(formatter)
-        file_handler.setLevel(logging.INFO)
-        # stream handler
-        stream_handler = logging.StreamHandler()
-        stream_handler.setFormatter(formatter)
-        # add hanlders
-        logger.addHandler(file_handler)
-        logger.addHandler(stream_handler)
-
-    @staticmethod
     def max_pool_2x2(x, name='max_pool'):
         return tf.nn.max_pool(value=x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name=name)
 
@@ -258,11 +256,19 @@ class Model:
         logger.info(t.op.name + '{}'.format(t.get_shape().as_list()))
 
     @staticmethod
-    def show_all_variables():
+    def show_all_variables(is_train=True):
         total_count = 0
         for idx, op in enumerate(tf.trainable_variables()):
             shape = op.get_shape()
             count = np.prod(shape)
-            logger.info("[%2d] %s %s = %s" % (idx, op.name, shape, count))
+            if is_train:
+                logger.info("[%2d] %s %s = %s" % (idx, op.name, shape, count))
+            else:
+                print("[%2d] %s %s = %s" % (idx, op.name, shape, count))
+
             total_count += int(count)
-        logger.info("[Total] variable size: %s" % "{:,}".format(total_count))
+
+        if is_train:
+            logger.info("[Total] variable size: %s" % "{:,}".format(total_count))
+        else:
+            print("[Total] variable size: %s" % "{:,}".format(total_count))
