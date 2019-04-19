@@ -24,7 +24,7 @@ parser.add_argument('--batch_size', dest='batch_size', default=4, type=int, help
 parser.add_argument('--dataset', dest='dataset', default='brain01', help='dataset name, default: brain01')
 parser.add_argument('--learning_rate', dest='learning_rate', default=1e-3, type=float, help='learning rate, default: 2e-4')
 parser.add_argument('--weight_decay', dest='weight_decay', default=1e-4, type=float, help='weight decay, default: 1e-5')
-parser.add_argument('--epoch', dest='epoch', default=3, type=int, help='number of epochs, default: 600')
+parser.add_argument('--epoch', dest='epoch', default=600, type=int, help='number of epochs, default: 600')
 parser.add_argument('--print_freq', dest='print_freq', default=10, type=int, help='print frequency for loss, default: 100')
 parser.add_argument('--load_model', dest='load_model', default=None, help='folder of saved model that you wish to continue training, (e.g., 20190411-2217), default: None')
 args = parser.parse_args()

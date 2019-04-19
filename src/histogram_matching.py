@@ -9,7 +9,7 @@ from utils import all_files_under, histogram, cumulative_histogram
 parser = argparse.ArgumentParser(description='histogram_matching')
 parser.add_argument('--data', dest='data', default='../../Data/brain01/raw',
                     help='dataset for histogram matching')
-parser.add_argument('--temp_id', dest='temp_id', default=0, type=int, help='template image id of the histogram matching')
+parser.add_argument('--temp_id', dest='temp_id', default=2, type=int, help='template image id of the histogram matching')
 parser.add_argument('--size', dest='size', default=256, type=int, help='image width == height')
 parser.add_argument('--delay', dest='delay', default=0, type=int, help='wait delay when showing image')
 parser.add_argument('--is_save', dest='is_save', default=False, action='store_true', help='save MR image')
