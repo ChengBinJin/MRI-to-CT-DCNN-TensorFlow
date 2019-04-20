@@ -20,7 +20,7 @@ from solver import Solver
 parser = argparse.ArgumentParser(description='main')
 parser.add_argument('--gpu_index', dest='gpu_index', default='0', help='gpu index if you have multiple gpus, default: 0')
 parser.add_argument('--is_train', dest='is_train', default=False, action='store_true', help='train mode, default: False')
-parser.add_argument('--batch_size', dest='batch_size', default=4, type=int, help='batch size for one iteration')
+parser.add_argument('--batch_size', dest='batch_size', default=8, type=int, help='batch size for one iteration')
 parser.add_argument('--dataset', dest='dataset', default='brain01', help='dataset name, default: brain01')
 parser.add_argument('--learning_rate', dest='learning_rate', default=1e-3, type=float, help='learning rate, default: 2e-4')
 parser.add_argument('--weight_decay', dest='weight_decay', default=1e-4, type=float, help='weight decay, default: 1e-5')
