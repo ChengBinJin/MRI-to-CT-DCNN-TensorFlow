@@ -16,11 +16,11 @@ This repository is an implementation of ["MR‐based synthetic CT generation usi
 
 ## MR-Based Synthetic CT Generation Results
 <p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470876-77370300-6486-11e9-8631-57b4a1d518b8.png" width=800)
+  <img src="https://user-images.githubusercontent.com/37034031/56470951-6dfa6600-6487-11e9-8dbc-a97f1340b654.png" width=800)
 </p>  
 
 ## Implementations
-- Six cross-validation  
+- Six cross-validations   
 - Data preprocessing methods: N4 bias correction, histogram matching, and mask generation  
 - U-Net for CNN model  
 - Encoder of the U-Net is initialized by pretrained VGG16 weights  
@@ -30,7 +30,7 @@ This repository is an implementation of ["MR‐based synthetic CT generation usi
 
 ## Documentation
 ### Dataset
-Download our toy dataset from [here] (https://www.dropbox.com/s/5wnd441uenbt5hp/brain01.zip?dl=0). This toy dataset just includes 367 paired images. We randomly divide data into training, validation, and test. 
+Download our toy dataset from [here](https://www.dropbox.com/s/5wnd441uenbt5hp/brain01.zip?dl=0). This toy dataset just includes 367 paired images. We randomly divide data into training, validation, and test. 
 
 ### Directory Hierarchy
 ``` 
@@ -48,7 +48,10 @@ Download our toy dataset from [here] (https://www.dropbox.com/s/5wnd441uenbt5hp/
 │   Data
 │   └── brain01
 │   │   └── raw
+│   Models_zoo
+│   └── caffe_layers_value.pickle
 ```  
+Download the pretrained VGG16 weights from [here](https://www.dropbox.com/s/d8wpv6rtow1n9p5/caffe_layers_value.pickle?dl=0).
 
 ### Data Preprocessing
 Use `preprocessing.py` to rectify N4 bias correction, histogram matching, and head mask generation. Example usage:
@@ -83,7 +86,7 @@ Use `main.py` to train a DCNN model. Example usage:
 python main.py --is_train
 ```
 - `gpu_index`: gpu index if you have multiple gpus, default: `0`  
-- `is_train`: training or test mode, default: `False` (test mode)  
+- `is_train`: training or test mode, default: `False (test mode)`  
 - `batch_size`: batch size for one iteration, default: `8`  
 - `dataset`: dataset name, default: `brain01`  
 - `learning_rate`: learning rate, default: `2e-4`  
@@ -102,20 +105,20 @@ please refer to the above arguments.
 Evaluation of the MAE, ME, MSE, and PCC in validation data during training process. Different color represents different model in six cross-validations.  
 
 <p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470728-8cab2d80-6484-11e9-8e61-b46c11a6942d.png" width=600)
+  <img src="https://user-images.githubusercontent.com/37034031/56470728-8cab2d80-6484-11e9-8e61-b46c11a6942d.png" width=800)
 </p>  
 
 Total loss, data loss and regularization term in each iteration.  
 
 <p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470734-96cd2c00-6484-11e9-92c4-e7166a83838a.png" width=600)
+  <img src="https://user-images.githubusercontent.com/37034031/56470734-96cd2c00-6484-11e9-92c4-e7166a83838a.png" width=800)
 </p>  
 
 ### Test Evaluation
 MAE, ME, MSE, and PCC for six models and average performance.  
 
 <p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470784-430f1280-6485-11e9-9ba4-f262f88b0c13.png" width=600)
+  <img src="https://user-images.githubusercontent.com/37034031/56470784-430f1280-6485-11e9-9ba4-f262f88b0c13.png" width=800)
 </p>  
 
 ### Citation
