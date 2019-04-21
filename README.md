@@ -16,7 +16,7 @@ This repository is an implementation of ["MR‐based synthetic CT generation usi
 
 ## MR-Based Synthetic CT Generation Results
 <p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470951-6dfa6600-6487-11e9-8dbc-a97f1340b654.png" width=800)
+  <img src="https://user-images.githubusercontent.com/37034031/56470951-6dfa6600-6487-11e9-8dbc-a97f1340b654.png" width=1000)
 </p>  
 
 ## Implementations
@@ -105,20 +105,20 @@ please refer to the above arguments.
 Evaluation of the MAE, ME, MSE, and PCC in validation data during training process. Different color represents different model in six cross-validations.  
 
 <p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470728-8cab2d80-6484-11e9-8e61-b46c11a6942d.png" width=800)
+  <img src="https://user-images.githubusercontent.com/37034031/56470728-8cab2d80-6484-11e9-8e61-b46c11a6942d.png" width=1000)
 </p>  
 
 Total loss, data loss and regularization term in each iteration.  
 
 <p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470734-96cd2c00-6484-11e9-92c4-e7166a83838a.png" width=800)
+  <img src="https://user-images.githubusercontent.com/37034031/56470734-96cd2c00-6484-11e9-92c4-e7166a83838a.png" width=1000)
 </p>  
 
 ### Test Evaluation
 MAE, ME, MSE, and PCC for six models and average performance.  
 
 <p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470784-430f1280-6485-11e9-9ba4-f262f88b0c13.png" width=800)
+  <img src="https://user-images.githubusercontent.com/37034031/56470784-430f1280-6485-11e9-9ba4-f262f88b0c13.png" width=1000)
 </p>  
 
 ### Citation
