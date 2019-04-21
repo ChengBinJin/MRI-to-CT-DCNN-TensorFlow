@@ -16,7 +16,7 @@ This repository is an implementation of ["MR‐based synthetic CT generation usi
 
 ## MR-Based Synthetic CT Generation Results
 <p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470951-6dfa6600-6487-11e9-8dbc-a97f1340b654.png" width=1000)
+  <img src="https://user-images.githubusercontent.com/37034031/56476818-8050c000-64d8-11e9-96c0-7770c332e792.png" width=1000)
 </p>  
 
 ## Implementations
