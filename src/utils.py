@@ -4,7 +4,6 @@
 # Written by Cheng-Bin Jin
 # Email: sbkim0407@gmail.com
 # ---------------------------------------------------------
-
 import os
 import cv2
 import numpy as np

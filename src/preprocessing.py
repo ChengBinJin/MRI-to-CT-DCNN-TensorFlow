@@ -1,3 +1,9 @@
+# ---------------------------------------------------------
+# Tensorflow DCNN Implementation
+# Licensed under The MIT License [see LICENSE for details]
+# Written by Cheng-Bin Jin
+# Email: sbkim0407@gmail.com
+# ---------------------------------------------------------
 import os
 import sys
 import argparse
@@ -7,11 +13,11 @@ import numpy as np
 from utils import all_files_under, n4itk, histogram_matching, get_mask
 
 paser = argparse.ArgumentParser(description='preprocessing')
-paser.add_argument('--data', dest='data', default='../../Data/brain01/raw', help='data path for preprocessing')
-paser.add_argument('--temp_id', dest='temp_id', default=2, type=int, help='template id of the histogram matching')
-paser.add_argument('--size', dest='size', default=256, type=int, help='image wdith == height')
-paser.add_argument('--delay', dest='delay', default=0, type=int, help='interval time when showing image')
-paser.add_argument('--is_save', dest='is_save', default=False, action='store_true', help='save image')
+paser.add_argument('--data', dest='data', default='../../Data/brain01/raw', help='dataset path for preprocessing, default: ../../Data/brain01/raw')
+paser.add_argument('--temp_id', dest='temp_id', default=2, type=int, help='template image id for histogram matching, default: 2')
+paser.add_argument('--size', dest='size', default=256, type=int, help='image width and height (wdith == height), default: 256')
+paser.add_argument('--delay', dest='delay', default=0, type=int, help='interval time when showing image, default: 1')
+paser.add_argument('--is_save', dest='is_save', default=False, action='store_true', help='save processed image or not, default: False')
 args = paser.parse_args()
 
 def main(data, temp_id, size=256, delay=0, is_save=False):
