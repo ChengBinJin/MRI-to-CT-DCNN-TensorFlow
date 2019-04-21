@@ -1,5 +1,5 @@
 # MRI-to-CT-DCNN-TensorFlow
-This repository is an implementation of ["MR‐based synthetic CT generation using a deep convolutional neural network method." Medical physics 2017"](https://aapm.onlinelibrary.wiley.com/doi/pdf/10.1002/mp.12155) by Xiao Han.
+This repository is an implementation of ["MR‐based synthetic CT generation using a deep convolutional neural network method." Medical physics 2017](https://aapm.onlinelibrary.wiley.com/doi/pdf/10.1002/mp.12155) by Xiao Han.
 
 <p align='center'>
   <img src="https://user-images.githubusercontent.com/37034031/56449995-fd0a5f80-635b-11e9-87c5-9383fe57b820.png" width=600)
@@ -16,15 +16,7 @@ This repository is an implementation of ["MR‐based synthetic CT generation usi
 
 ## MR-Based Synthetic CT Generation Results
 <p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470839-f4ae4380-6485-11e9-858f-2fd15964bf8d.png" width=600)
-</p>  
-
-<p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470842-fc6de800-6485-11e9-91d8-616234f90723.png" width=600)
-</p>  
-
-<p align='center'>
-  <img src="https://user-images.githubusercontent.com/37034031/56470845-0394f600-6486-11e9-824e-cc4e808f843f.png" width=600)
+  <img src="https://user-images.githubusercontent.com/37034031/56470876-77370300-6486-11e9-8631-57b4a1d518b8.png" width=800)
 </p>  
 
 ## Implementations
