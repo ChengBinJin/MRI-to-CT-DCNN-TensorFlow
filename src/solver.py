@@ -44,7 +44,7 @@ class Solver(object):
 
         i = 0
         while i < num_data:
-            # The ending index for the next bach is denoted j.
+            # The ending index for the next batch is denoted j.
             j = min(i + batch_size, num_data)
 
             feed = {
