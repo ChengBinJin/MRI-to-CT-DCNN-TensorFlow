@@ -123,7 +123,7 @@ MAE, ME, MSE, and PCC for six models and average performance.
 
 ### Citation
 ```
-  @misc{chengbinjin2018vae,
+  @misc{chengbinjin2019DCNN,
     author = {Cheng-Bin Jin},
     title = {MRI-to-CT-DCNN-Tensorflow},
     year = {2019},
