@@ -8,7 +8,7 @@ This repository is an implementation of ["MR‐based synthetic CT generation usi
 ## Requirements
 - tensorflow 1.13.1
 - numpy 1.15.2
-- opencv 3.4.3
+- opencv 4.1.0.25
 - matplotlib 2.2.3
 - pickleshare 0.7.4
 - simpleitk 1.2.0
