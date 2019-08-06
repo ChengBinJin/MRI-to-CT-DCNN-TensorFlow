@@ -141,7 +141,7 @@ def get_mask(image, task='m2c'):
     # Find the biggest contour
     mask = np.zeros((h, w), np.uint8)
     max_pix, max_cnt = 0, None
-    _, contours, _ = cv2.findContours(pre_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    contours, hierachy = cv2.findContours(pre_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     for cnt in contours:
         num_pix = cv2.contourArea(cnt)
         if num_pix > max_pix:
