@@ -41,6 +41,7 @@ Download our toy dataset from [here](https://www.dropbox.com/s/5wnd441uenbt5hp/b
 │   │   ├── get_mask.py
 │   │   ├── histogram_matching.py
 │   │   ├── main.py
+│   │   ├── model.py
 │   │   ├── n4itk.py
 │   │   ├── preprocessing.py
 │   │   ├── solver.py
