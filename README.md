@@ -52,7 +52,7 @@ Download our toy dataset from [here](https://www.dropbox.com/s/5wnd441uenbt5hp/b
 │   Models_zoo
 │   └── caffe_layers_value.pickle
 ```  
-Download the pretrained VGG16 weights from [here](https://www.dropbox.com/s/d8wpv6rtow1n9p5/caffe_layers_value.pickle?dl=0).
+Download the pretrained VGG16 weights from [here](https://yunpan.360.cn/surl_yxLDnu6QqjQ) (password:3ouy).
 
 ### Data Preprocessing
 Use `preprocessing.py` to rectify N4 bias correction, histogram matching, and head mask generation. Example usage:
